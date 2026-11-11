@@ -10,3 +10,8 @@
 // $(OURA_*) Info.plist keys resolve to empty strings. "Fully offline" is a property of the bytes
 // in the default binary, not a runtime check.
 #include? "OuraSecrets.xcconfig"
+// The family "care" email credentials (Strand/Care/CareSecrets.xcconfig, gitignored; template at
+// CareSecrets.example.xcconfig). Included here because this file is the app targets' one tracked
+// xcconfig. When absent, the $(CARE_*) Info.plist keys resolve to empty strings and the feature
+// stays switched off at runtime.
+#include? "../Care/CareSecrets.xcconfig"

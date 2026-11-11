@@ -10,7 +10,22 @@
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).coachbrief</string>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).healthwriteback</string>
 		<string>$(PRODUCT_BUNDLE_IDENTIFIER).rescore</string>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER).stalebattery</string>
 	</array>
+	<key>CARE_EMAIL_FROM</key>
+	<string>$(CARE_EMAIL_FROM)</string>
+	<key>CARE_EMAIL_TO</key>
+	<string>$(CARE_EMAIL_TO)</string>
+	<key>CARE_PERSON_NAME</key>
+	<string>$(CARE_PERSON_NAME)</string>
+	<key>CARE_SMTP_HOST</key>
+	<string>$(CARE_SMTP_HOST)</string>
+	<key>CARE_SMTP_PASSWORD</key>
+	<string>$(CARE_SMTP_PASSWORD)</string>
+	<key>CARE_SMTP_PORT</key>
+	<string>$(CARE_SMTP_PORT)</string>
+	<key>CARE_SMTP_USERNAME</key>
+	<string>$(CARE_SMTP_USERNAME)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

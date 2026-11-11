@@ -99,6 +99,9 @@ err.txt
 # Oura OAuth app credentials (BYO; never committed)
 Strand/Oura/OuraSecrets.xcconfig
 
+# Care email SMTP credentials (BYO; never committed)
+Strand/Care/CareSecrets.xcconfig
+
 # Personal bundle id prefix (BYO; never committed)
 Config/BundleIdSecrets.xcconfig
 

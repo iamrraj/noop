@@ -68,11 +68,13 @@ struct RootTabView: View {
     /// V8 liquid redesign is the default Today; the Settings toggle lets a user fall back to the classic
     /// Today if they prefer it (keyed identically to the SettingsView toggle). Default ON.
     @AppStorage("noop.liquidTodayEnabled") private var liquidTodayEnabled = false
+    /// The reduced four-card home for a wearer who wants only the basics (Family updates settings).
+    @AppStorage(CarePrefs.simpleHomeKey) private var simpleHome = false
 
     /// The metric-first dashboard is the default Home. The alternate liquid dashboard remains
     /// available when the user explicitly enables it in Appearance settings.
     @ViewBuilder private var todayTabRoot: some View {
-        if liquidTodayEnabled { LiquidTodayView() } else { TodayView() }
+        if simpleHome { SimpleHomeView() } else if liquidTodayEnabled { LiquidTodayView() } else { TodayView() }
     }
 
     /// Native tab selection binding. SwiftUI sends taps on the already-selected item through the
@@ -132,7 +134,7 @@ struct RootTabView: View {
         TabView(selection: nativeTabSelection) {
             tab(todayTabRoot, "Home", "house", path: $tabPaths[0], scrollSignal: scrollTop[0]).tag(0)
             tab(HealthView(), "Health", "heart", path: $tabPaths[1], scrollSignal: scrollTop[1]).tag(1)
-            tab(WhoopCommunityView(), "Community", "person.3", path: $tabPaths[2], scrollSignal: scrollTop[2]).tag(2)
+            tab(SleepView(), "Sleep", "bed.double", path: $tabPaths[2], scrollSignal: scrollTop[2]).tag(2)
             moreTab(path: $tabPaths[4], scrollSignal: scrollTop[4]).tag(4)
         }
         .tint(StrandPalette.accent)
@@ -452,62 +454,74 @@ struct RootTabView: View {
             ScreenScaffold(title: "More", subtitle: "Everything else, one tap away",
                            onRefresh: { await repo.refresh() },
                            topBackground: liquidScaffoldSky()) {
-                moreSection("Insights") {
-                    MoreRow("What Moves You", "wand.and.sparkles", .insightsHub)
-                    MoreRow("Intelligence", "brain.head.profile", .intelligence)
-                    // K3: Coach promoted to a top-level tab — no longer listed under More.
-                    MoreRow("Insights", "lightbulb.fill", .insights)
-                    MoreRow("Trends", "chart.line.uptrend.xyaxis", .trends)
-                    MoreRow("Sleep", "bed.double", .sleep)
-                    MoreRow("Coach", "sparkles", .coach)
-                    MoreRow("Explore", "square.grid.2x2.fill", .explore)
-                    MoreRow("Compare", "rectangle.split.2x1.fill", .compare)
-                }
-                moreSection("Body") {
-                    MoreRow("Live", "waveform.path.ecg", .live)
-                    MoreRow("Workouts", "figure.run", .workouts)
-                    MoreRow("Lift Log", "dumbbell.fill", .liftLog)
-                    MoreRow("Health", "heart.text.square.fill", .health)
-                    MoreRow("Lab Book", "books.vertical.fill", .labBook)
-                    MoreRow("Stress", "bolt.heart.fill", .stress)
-                    MoreRow("Breathe", "wind", .breathe)
-                    MoreRow("Intervals", "timer", .intervals)
-                    // Experimental beat-to-beat regularity visualization — self-gates on its own consent.
-                    MoreRow("Rhythm", "waveform.path", .rhythm)
-                }
-                moreSection("Data") {
-                    MoreRow("Your Data, Fused", "square.stack.3d.up.fill", .fusedRecord)
-                    MoreRow("Apple Health", "heart.fill", .appleHealth)
-                    MoreRow("Mi Band", "figure.walk.motion", .miBand)
-                    MoreRow("Data Sources", "externaldrive.fill", .dataSources)
-                    MoreRow("Backup & Sync", "externaldrive.fill.badge.icloud", .backupSync)
-                    // #155: HealthKit-free Apple Health path for sideloaded installs (Siri Shortcut
-                    // reads the opt-in Documents/noop_sync.txt drop file).
-                    MoreRow("Shortcuts Export", "square.and.arrow.up.fill", .shortcutsExport)
-                    // The plain 4.0 vs 5.0/MG capability grid — what NOOP reads live off each strap.
-                    MoreRow("NOOP Limitations", "list.bullet.rectangle", .noopLimitations)
-                }
-                moreSection("App") {
-                    // #805/#811: the v7.3.1 #766 alarm consolidation moved Smart Alarm under a single
-                    // "Alarms" sidebar entry (RootView .smartAlarm) but the regression dropped the row
-                    // from the iPhone More list, leaving Alarms unreachable on iPhone. Restore it here
-                    // (route to SmartAlarmView, the cross-platform iOS/macOS surface).
-                    //
-                    // Notifications (RootView .notifications) is deliberately NOT added: that screen is
-                    // macOS-only (it picks which Mac apps tap your wrist via NSWorkspace, imports AppKit,
-                    // and project.yml excludes Screens/NotificationSettingsView.swift from the iOS target),
-                    // so it can't compile or apply on iPhone. iPhone's wrist-alert controls live on the
-                    // Automations screen instead. Its absence from the iPhone More list is correct.
-                    MoreRow("Alarms", "alarm.fill", .alarms)
-                    MoreRow("Automations", "wand.and.stars", .automations)
-                    // The Test Centre (the diagnostics + bug-report hub) gets a first-class home here, not
-                    // just buried in Settings, so the feedback loop is one tap from the More tab.
-                    MoreRow("Test Centre", "stethoscope", .testCentre)
-                    MoreRow("Siri & Shortcuts", "mic.fill", .siriShortcuts)
-                    // #477 lives here rather than inside Settings: the strap-battery levers are the
-                    // ones people reach for when a strap is running down, so they get their own row.
-                    MoreRow("Power saving", "battery.25", .powerSaving)
-                    MoreRow("Settings", "gearshape.fill", .settings)
+                if simpleHome {
+                    // The short list for the simple home: what a wearer who only wants the basics can
+                    // need, with everything else one toggle away in Family updates.
+                    moreSection("Essentials") {
+                        MoreRow("Family updates", "person.2.fill", .care)
+                        MoreRow("Apple Health", "heart.fill", .appleHealth)
+                        MoreRow("Alarms", "alarm.fill", .alarms)
+                        MoreRow("Power saving", "battery.25", .powerSaving)
+                        MoreRow("Settings", "gearshape.fill", .settings)
+                    }
+                } else {
+                    moreSection("Insights") {
+                        MoreRow("What Moves You", "wand.and.sparkles", .insightsHub)
+                        MoreRow("Intelligence", "brain.head.profile", .intelligence)
+                        // K3: Coach promoted to a top-level tab — no longer listed under More.
+                        MoreRow("Insights", "lightbulb.fill", .insights)
+                        MoreRow("Trends", "chart.line.uptrend.xyaxis", .trends)
+                        MoreRow("Coach", "sparkles", .coach)
+                        MoreRow("Explore", "square.grid.2x2.fill", .explore)
+                        MoreRow("Compare", "rectangle.split.2x1.fill", .compare)
+                    }
+                    moreSection("Body") {
+                        MoreRow("Live", "waveform.path.ecg", .live)
+                        MoreRow("Workouts", "figure.run", .workouts)
+                        MoreRow("Lift Log", "dumbbell.fill", .liftLog)
+                        MoreRow("Health", "heart.text.square.fill", .health)
+                        MoreRow("Lab Book", "books.vertical.fill", .labBook)
+                        MoreRow("Stress", "bolt.heart.fill", .stress)
+                        MoreRow("Breathe", "wind", .breathe)
+                        MoreRow("Intervals", "timer", .intervals)
+                        // Experimental beat-to-beat regularity visualization — self-gates on its own consent.
+                        MoreRow("Rhythm", "waveform.path", .rhythm)
+                    }
+                    moreSection("Data") {
+                        MoreRow("Your Data, Fused", "square.stack.3d.up.fill", .fusedRecord)
+                        MoreRow("Apple Health", "heart.fill", .appleHealth)
+                        MoreRow("Mi Band", "figure.walk.motion", .miBand)
+                        MoreRow("Data Sources", "externaldrive.fill", .dataSources)
+                        MoreRow("Backup & Sync", "externaldrive.fill.badge.icloud", .backupSync)
+                        // #155: HealthKit-free Apple Health path for sideloaded installs (Siri Shortcut
+                        // reads the opt-in Documents/noop_sync.txt drop file).
+                        MoreRow("Shortcuts Export", "square.and.arrow.up.fill", .shortcutsExport)
+                        // The plain 4.0 vs 5.0/MG capability grid — what NOOP reads live off each strap.
+                        MoreRow("NOOP Limitations", "list.bullet.rectangle", .noopLimitations)
+                    }
+                    moreSection("App") {
+                        // #805/#811: the v7.3.1 #766 alarm consolidation moved Smart Alarm under a single
+                        // "Alarms" sidebar entry (RootView .smartAlarm) but the regression dropped the row
+                        // from the iPhone More list, leaving Alarms unreachable on iPhone. Restore it here
+                        // (route to SmartAlarmView, the cross-platform iOS/macOS surface).
+                        //
+                        // Notifications (RootView .notifications) is deliberately NOT added: that screen is
+                        // macOS-only (it picks which Mac apps tap your wrist via NSWorkspace, imports AppKit,
+                        // and project.yml excludes Screens/NotificationSettingsView.swift from the iOS target),
+                        // so it can't compile or apply on iPhone. iPhone's wrist-alert controls live on the
+                        // Automations screen instead. Its absence from the iPhone More list is correct.
+                        MoreRow("Family updates", "person.2.fill", .care)
+                        MoreRow("Alarms", "alarm.fill", .alarms)
+                        MoreRow("Automations", "wand.and.stars", .automations)
+                        // The Test Centre (the diagnostics + bug-report hub) gets a first-class home here, not
+                        // just buried in Settings, so the feedback loop is one tap from the More tab.
+                        MoreRow("Test Centre", "stethoscope", .testCentre)
+                        MoreRow("Siri & Shortcuts", "mic.fill", .siriShortcuts)
+                        // #477 lives here rather than inside Settings: the strap-battery levers are the
+                        // ones people reach for when a strap is running down, so they get their own row.
+                        MoreRow("Power saving", "battery.25", .powerSaving)
+                        MoreRow("Settings", "gearshape.fill", .settings)
+                    }
                 }
             }
             // The rows push MoreDestination VALUES so a re-tap of the More tab can pop them off the
@@ -585,39 +599,12 @@ struct RootTabView: View {
 }
 
 
-/// WHOOP-style Community landing page. Connected teams/challenge data is not yet available.
-private struct WhoopCommunityView: View {
-    var body: some View {
-        ScreenScaffold(title: "Community", subtitle: "Stay connected and keep each other moving") {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("YOUR COMMUNITY")
-                    .font(StrandFont.overline)
-                    .tracking(1.4)
-                    .foregroundStyle(StrandPalette.textSecondary)
-                communityCard("Teams", "Find your people and work toward shared goals.")
-                communityCard("Challenges", "Take on a challenge and build consistency together.")
-                communityCard("Leaderboards", "Compare progress with your team.")
-            }
-        }
-    }
-
-    private func communityCard(_ title: String, _ detail: String) -> some View {
-        NoopCard {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(title).font(StrandFont.headline).foregroundStyle(StrandPalette.textPrimary)
-                Text(detail).font(StrandFont.body).foregroundStyle(StrandPalette.textSecondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-}
-
 /// Every screen the More index links to, as a `Hashable` value the tab's `NavigationPath` can carry
 /// (#198): a closure-destination push would bypass the path and be un-poppable on tab re-tap. The
 /// per-screen chrome the old inline links applied lives at the single `navigationDestination(for:)`
 /// registration in `moreTab`.
 private enum MoreDestination: Hashable {
-    case insightsHub, intelligence, coach, insights, explore, compare, trends, sleep
+    case insightsHub, intelligence, coach, insights, explore, compare, trends, care
     case live, workouts, liftLog, health, labBook, stress, breathe, intervals, rhythm
     case fusedRecord, appleHealth, miBand, dataSources, backupSync, shortcutsExport, noopLimitations
     case alarms, automations, testCentre, siriShortcuts, powerSaving, settings
@@ -631,7 +618,7 @@ private enum MoreDestination: Hashable {
         case .explore:         MetricExplorerView()
         case .compare:         CompareView()
         case .trends:          TrendsView()
-        case .sleep:           SleepView()
+        case .care:            CareSettingsView()
         case .live:            LiveView()
         case .workouts:        WorkoutsView()
         case .liftLog:         LiftLogView()

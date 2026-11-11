@@ -147,6 +147,9 @@ struct StrandiOSApp: App {
         // makes false. Registered unconditionally and re-armed from inside its own handler.
         StaleBatteryBackgroundScheduler.register(perform: { [weak model] in
             await model?.checkStrapNotSeen()
+            // The same periodic wake carries the family emails: it is the one task that still runs
+            // when the strap has gone quiet, which is exactly when an alert is owed.
+            if let model { await CareReporter.runIfDue(model: model) }
         })
         StaleBatteryBackgroundScheduler.schedule()
         let bridge = HealthKitBridge(
@@ -349,6 +352,7 @@ struct StrandiOSApp: App {
             if phase == .active {
                 CoachBriefScheduler.activateIfEnabled { await model.coach.generateBrief() }
                 model.drainPendingIntents(router: router)
+                Task { await CareReporter.runIfDue(model: model) }
                 // iOS starts a Lift Log banner only for an app on screen, so a banner lost while NOOP was in
                 // the background comes back now, whether or not the strap is sending anything.
                 pushLiftActivity()
@@ -410,6 +414,7 @@ struct StrandiOSApp: App {
                 // into Apple Health. Gated inside writeIfEnabled on the opt-in default (OFF) — a
                 // no-op until the user turns on Shortcuts Export.
                 Task { await ShortcutHealthExport.writeIfEnabled(repo: model.repo) }
+                Task { await CareReporter.runIfDue(model: model) }
             }
         }
     }
