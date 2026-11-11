@@ -73,22 +73,22 @@ enum SMTPTransport {
 
         func start() async throws {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                var resumed = false
+                let once = ResumeOnce()
                 connection.stateUpdateHandler = { [connection] state in
-                    // The handler runs on `queue`, so `resumed` needs no further locking.
-                    guard !resumed else { return }
+                    // The handler runs on `queue`, one call at a time.
+                    guard !once.resumed else { return }
                     switch state {
                     case .ready:
-                        resumed = true
+                        once.resumed = true
                         connection.stateUpdateHandler = nil
                         continuation.resume()
                     case .failed(let error), .waiting(let error):
-                        resumed = true
+                        once.resumed = true
                         connection.stateUpdateHandler = nil
                         connection.cancel()
                         continuation.resume(throwing: TransportError.connectionFailed(error.localizedDescription))
                     case .cancelled:
-                        resumed = true
+                        once.resumed = true
                         continuation.resume(throwing: TransportError.timedOut)
                     default:
                         break
@@ -97,6 +97,9 @@ enum SMTPTransport {
                 connection.start(queue: queue)
             }
         }
+
+        /// Whether `start()`'s continuation has been resumed. Only touched on `queue`.
+        private final class ResumeOnce: @unchecked Sendable { var resumed = false }
 
         func send(_ text: String) async throws {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
