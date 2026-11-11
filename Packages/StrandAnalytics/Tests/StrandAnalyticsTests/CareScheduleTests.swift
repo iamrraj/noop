@@ -47,6 +47,45 @@ final class CareScheduleTests: XCTestCase {
         XCTAssertEqual(decision, .send)
     }
 
+    // MARK: - Keep-alive reminder
+
+    private var utc: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC") ?? .current
+        return calendar
+    }
+
+    /// 2026-11-11 00:00:00 UTC.
+    private let dayStart = 1_794_355_200.0
+
+    private func fire(fromHour hour: Double, quietHours: Int = 10) -> Double {
+        let now = Date(timeIntervalSince1970: dayStart + hour * 3600)
+        return (CareSchedule.keepAliveFireDate(now: now, calendar: utc, quietHours: quietHours)
+            .timeIntervalSince1970 - dayStart) / 3600
+    }
+
+    func testDaytimeReminderFiresAfterTheQuietPeriod() {
+        XCTAssertEqual(fire(fromHour: 8), 18)
+        XCTAssertEqual(fire(fromHour: 10.5), 20.5)
+    }
+
+    func testEveningCandidateIsHeldUntilMorning() {
+        XCTAssertEqual(fire(fromHour: 11), 32)      // 21:00 is night → 08:00 next day
+        XCTAssertEqual(fire(fromHour: 15), 32)      // 01:00 next day → 08:00 that day
+    }
+
+    func testEarlyMorningCandidateIsHeldUntilMorning() {
+        XCTAssertEqual(fire(fromHour: 21.5), 32)    // 07:30 next day → 08:00
+    }
+
+    func testCandidateExactlyAtMorningIsKept() {
+        XCTAssertEqual(fire(fromHour: 22), 32)      // exactly 08:00 next day
+    }
+
+    func testNonPositiveQuietPeriodStillLiesInTheFuture() {
+        XCTAssertEqual(fire(fromHour: 9, quietHours: 0), 10)
+    }
+
     // MARK: - CareDay from stored rows
 
     private func metric(steps: Int? = nil) -> DailyMetric {

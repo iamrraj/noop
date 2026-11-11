@@ -14,6 +14,7 @@ struct SimpleHomeView: View {
 
     @State private var phoneStepsToday: Int?
     @State private var estimatedStepsToday: Int?
+    @State private var fitnessAge: Double?
 
     private var stepGoal: Int { storedStepGoal > 0 ? storedStepGoal : CarePrefs.defaultStepGoal }
 
@@ -36,6 +37,7 @@ struct SimpleHomeView: View {
                 scoresCard
                 stepsCard
                 SimpleHeartCard(restingHr: lastNight?.restingHr)
+                fitnessAgeCard
                 SimpleStrapCard()
             }
         }
@@ -127,12 +129,30 @@ struct SimpleHomeView: View {
         return day.stepsAreEstimated ? base + " " + String(localized: "Estimated from strap movement.") : base
     }
 
+    private var fitnessAgeCard: some View {
+        NoopCard {
+            VStack(alignment: .leading, spacing: NoopMetrics.cardInnerSpacing) {
+                SimpleCardTitle(title: "Fitness age", icon: "figure.walk")
+                Text(fitnessAge.map { String(localized: "\(Int($0.rounded())) years") } ?? "—")
+                    .font(StrandFont.title1)
+                    .foregroundStyle(StrandPalette.textPrimary)
+                Text(fitnessAge == nil
+                     ? String(localized: "Needs age and sex in Settings and about a week of nights. Updated weekly.")
+                     : String(localized: "A fitness comparison from resting heart rate and activity, not a medical age. Updated weekly."))
+                    .font(StrandFont.subhead)
+                    .foregroundStyle(StrandPalette.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
     private func loadSteps() async {
         let key = todayKey
         let phone = await repo.appleDailyRows(days: 3)
         phoneStepsToday = phone.last(where: { $0.day == key })?.steps
         let estimates = await repo.exploreSeries(key: "steps_est", source: "my-whoop", days: 3)
         estimatedStepsToday = estimates.last(where: { $0.day == key }).map { Int($0.value.rounded()) }
+        fitnessAge = await repo.exploreSeries(key: "fitness_age", source: "my-whoop").last?.value
     }
 }
 

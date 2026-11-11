@@ -33,6 +33,21 @@ public enum CareSchedule {
         if !syncedToday && localHour < max(sendHour, waitUntilHour) { return .waitingForSync }
         return .send
     }
+
+    /// When the "NOOP has stopped updating" reminder should fire if nothing re-arms it first.
+    ///
+    /// The app pushes this forward every time it runs, so it only ever fires after `quietHours` with
+    /// no sign of life — the app was swiped away, or the phone restarted and it was never reopened.
+    /// A time that would land overnight is held until `morningHour`: iOS can legitimately leave a
+    /// healthy app unrun for hours while its owner sleeps, and waking her to say so helps nobody.
+    public static func keepAliveFireDate(now: Date, calendar: Calendar, quietHours: Int = 10,
+                                         nightStartHour: Int = 21, morningHour: Int = 8) -> Date {
+        let candidate = now.addingTimeInterval(TimeInterval(max(1, quietHours)) * 3600)
+        let hour = calendar.component(.hour, from: candidate)
+        guard hour >= nightStartHour || hour < morningHour else { return candidate }
+        let morning = DateComponents(hour: morningHour, minute: 0, second: 0)
+        return calendar.nextDate(after: candidate, matching: morning, matchingPolicy: .nextTime) ?? candidate
+    }
 }
 
 public extension CareDay {

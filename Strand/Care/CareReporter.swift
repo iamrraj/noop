@@ -116,12 +116,14 @@ enum CareReporter {
         }
         let historyKeys = Set(metricByDay.keys).union(phoneSteps.keys).filter { $0 >= fromKey && $0 < yesterdayKey }
         let day = careDay(yesterdayKey)
+        // Banked weekly, so the latest value is the current one whatever day it was written.
+        let fitnessAge = await model.repo.exploreSeries(key: "fitness_age", source: "my-whoop").last?.value
         let dayAlerts = CareAlertEngine.dayAlerts(day: day, history: historyKeys.map(careDay))
 
         return CareReport.dailySummary(personName: config.personName, day: day,
                                        stepGoal: CarePrefs.stepGoal(defaults), device: device,
                                        alerts: dayAlerts + deviceAlerts,
-                                       nowTs: Int(now.timeIntervalSince1970))
+                                       nowTs: Int(now.timeIntervalSince1970), fitnessAge: fitnessAge)
     }
 
     // MARK: - Sending

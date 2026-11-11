@@ -150,7 +150,9 @@ struct StrandiOSApp: App {
             // The same periodic wake carries the family emails: it is the one task that still runs
             // when the strap has gone quiet, which is exactly when an alert is owed.
             if let model { await CareReporter.runIfDue(model: model) }
+            CareKeepAlive.rearm()
         })
+        CareKeepAlive.start(live: model.live)
         StaleBatteryBackgroundScheduler.schedule()
         let bridge = HealthKitBridge(
             repo: model.repo,
@@ -353,6 +355,7 @@ struct StrandiOSApp: App {
                 CoachBriefScheduler.activateIfEnabled { await model.coach.generateBrief() }
                 model.drainPendingIntents(router: router)
                 Task { await CareReporter.runIfDue(model: model) }
+                CareKeepAlive.rearm(force: true)
                 // iOS starts a Lift Log banner only for an app on screen, so a banner lost while NOOP was in
                 // the background comes back now, whether or not the strap is sending anything.
                 pushLiftActivity()
@@ -415,6 +418,7 @@ struct StrandiOSApp: App {
                 // no-op until the user turns on Shortcuts Export.
                 Task { await ShortcutHealthExport.writeIfEnabled(repo: model.repo) }
                 Task { await CareReporter.runIfDue(model: model) }
+                CareKeepAlive.rearm(force: true)
             }
         }
     }

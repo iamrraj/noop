@@ -14,6 +14,7 @@ struct CareSettingsView: View {
     @AppStorage(CarePrefs.lastErrorKey) private var lastError = ""
     @AppStorage(CarePrefs.lastSentAtKey) private var lastSentAt = 0.0
 
+    @State private var keepAliveReminder = CareKeepAlive.isEnabled()
     @State private var isSendingTest = false
     @State private var testResult: String?
 
@@ -40,12 +41,26 @@ struct CareSettingsView: View {
                 }
                 .toggleStyle(.switch)
                 .tint(StrandPalette.accent)
+                .onChange(of: simpleHome) { _, isOn in simpleHomeChanged(isOn) }
                 caption("Shows only the recovery, effort and sleep rings, steps, heart rate and strap battery in large type, and shortens the More list.")
                 Stepper(value: $stepGoal, in: 1000...30_000, step: 500) {
                     Text("Daily step goal: \(stepGoal)")
                         .font(StrandFont.subhead)
                         .foregroundStyle(StrandPalette.textPrimary)
                 }
+                Toggle(isOn: $keepAliveReminder) {
+                    Text("Remind me when NOOP has stopped")
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(StrandPalette.textPrimary)
+                }
+                .toggleStyle(.switch)
+                .tint(StrandPalette.accent)
+                .onChange(of: keepAliveReminder) { _, isOn in
+                    UserDefaults.standard.set(isOn, forKey: CareKeepAlive.enabledKey)
+                    if isOn { CareKeepAlive.requestAuthorization() }
+                    CareKeepAlive.rearm(force: true)
+                }
+                caption("If the app is swiped away or the phone restarts, NOOP cannot read the strap. This shows a notification after about ten hours of silence, never overnight.")
             }
         }
     }
@@ -106,6 +121,13 @@ struct CareSettingsView: View {
             }
             .foregroundStyle(StrandPalette.statusCritical)
         }
+    }
+
+    /// Simple home turns the reminder on by default, so its permission prompt belongs to that switch.
+    private func simpleHomeChanged(_ isOn: Bool) {
+        keepAliveReminder = CareKeepAlive.isEnabled()
+        if isOn && keepAliveReminder { CareKeepAlive.requestAuthorization() }
+        CareKeepAlive.rearm(force: true)
     }
 
     private func sendTest() async {

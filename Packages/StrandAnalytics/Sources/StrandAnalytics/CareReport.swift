@@ -72,7 +72,7 @@ public enum CareReport {
     /// reason someone would act on it. `nowTs` is only used to phrase how long ago the strap was heard from.
     public static func dailySummary(personName: String, day: CareDay, stepGoal: Int?,
                                     device: CareDeviceStatus, alerts: [CareAlert],
-                                    nowTs: Int) -> CareEmail {
+                                    nowTs: Int, fitnessAge: Double? = nil) -> CareEmail {
         let name = displayName(personName)
         var lines: [String] = []
         lines.append("Daily summary for \(name) — \(day.day)")
@@ -103,6 +103,10 @@ public enum CareReport {
         lines.append("  Resting heart rate:  \(day.restingHr.map { "\($0) bpm" } ?? missing)")
         lines.append("  Heart-rate variability:  \(day.hrvMs.map { "\(Int($0.rounded())) ms" } ?? missing)")
         lines.append("  Recovery:  \(scoreText(day.recovery))")
+        // A weekly fitness comparison, not a daily reading, so it is omitted rather than shown as a gap.
+        if let fitnessAge {
+            lines.append("  Fitness age:  \(Int(fitnessAge.rounded())) (estimate, updated weekly)")
+        }
         lines.append("")
         lines.append("STRAP")
         lines.append("  Battery:    \(device.batteryPct.map { "\($0)%" } ?? missing)")

@@ -68,6 +68,15 @@ final class CareReportTests: XCTestCase {
         XCTAssertEqual(CareReport.stepsText(CareDay(day: "d", steps: 0), goal: 5000), "0 of 5000 goal (0%)")
     }
 
+    func testFitnessAgeLineOnlyWhenKnown() {
+        let without = CareReport.dailySummary(personName: "Mum", day: fullDay, stepGoal: nil,
+                                              device: device, alerts: [], nowTs: 10_000)
+        XCTAssertFalse(without.body.contains("Fitness age"))
+        let with = CareReport.dailySummary(personName: "Mum", day: fullDay, stepGoal: nil,
+                                           device: device, alerts: [], nowTs: 10_000, fitnessAge: 57.6)
+        XCTAssertTrue(with.body.contains("Fitness age:  58 (estimate, updated weekly)"))
+    }
+
     func testStepProgress() {
         XCTAssertEqual(CareReport.stepProgress(steps: nil, goal: 5000), 0)
         XCTAssertEqual(CareReport.stepProgress(steps: 0, goal: 5000), 0)
