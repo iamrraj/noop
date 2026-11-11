@@ -70,11 +70,21 @@ struct RootTabView: View {
     @AppStorage("noop.liquidTodayEnabled") private var liquidTodayEnabled = false
     /// The reduced four-card home for a wearer who wants only the basics (Family updates settings).
     @AppStorage(CarePrefs.simpleHomeKey) private var simpleHome = false
+    /// The dashboard home (day switcher, rings, monitors, activities, week chart). Default ON.
+    @AppStorage(CarePrefs.dashboardHomeKey) private var dashboardHome = true
 
     /// The metric-first dashboard is the default Home. The alternate liquid dashboard remains
     /// available when the user explicitly enables it in Appearance settings.
     @ViewBuilder private var todayTabRoot: some View {
-        if simpleHome { SimpleHomeView() } else if liquidTodayEnabled { LiquidTodayView() } else { TodayView() }
+        if simpleHome {
+            SimpleHomeView()
+        } else if dashboardHome {
+            DashboardHomeView()
+        } else if liquidTodayEnabled {
+            LiquidTodayView()
+        } else {
+            TodayView()
+        }
     }
 
     /// Native tab selection binding. SwiftUI sends taps on the already-selected item through the

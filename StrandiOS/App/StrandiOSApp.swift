@@ -615,6 +615,31 @@ enum DemoScreens {
         // + self-service pairing guidance, screenshot-able WITHOUT reproducing the bond refusal on real
         // hardware.
         case "bondrefused": return AnyView(BondRefusedDemoScreen())
+        // The home variants and the More destinations the list above never covered, so every
+        // screen reachable from the tab bar can be captured.
+        case "dashboard": return AnyView(DashboardHomeView())
+        case "profile": return AnyView(DashboardProfileView())
+        case "device": return AnyView(DashboardDeviceView())
+        case "simplehome": return AnyView(SimpleHomeView())
+        case "family": return AnyView(CareSettingsView())
+        case "insightshub": return AnyView(InsightsHubView())
+        case "intelligence": return AnyView(IntelligenceView())
+        case "coach": return AnyView(CoachView())
+        case "liftlog": return AnyView(LiftLogView())
+        case "labbook": return AnyView(LabBookView())
+        case "breathe": return AnyView(BreathingView())
+        case "intervals": return AnyView(IntervalTimerView())
+        case "applehealth": return AnyView(AppleHealthView())
+        case "miband": return AnyView(XiaomiBandView())
+        case "datasources": return AnyView(DataSourcesView())
+        case "backupsync": return AnyView(BackupSyncView())
+        case "shortcutsexport": return AnyView(ShortcutExportSettingsView())
+        case "limitations": return AnyView(NoopLimitationsView())
+        case "alarms": return AnyView(SmartAlarmView())
+        case "automations": return AnyView(AutomationsView())
+        case "testcentre": return AnyView(TestCentreView())
+        case "sirishortcuts": return AnyView(SiriShortcutsSettingsView())
+        case "powersaving": return AnyView(PowerSavingView())
         default:         return nil
         }
     }

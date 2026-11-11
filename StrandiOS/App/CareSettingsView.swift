@@ -8,6 +8,7 @@ import StrandDesign
 struct CareSettingsView: View {
     @EnvironmentObject private var model: AppModel
     @AppStorage(CarePrefs.simpleHomeKey) private var simpleHome = false
+    @AppStorage(CarePrefs.dashboardHomeKey) private var dashboardHome = true
     @AppStorage(CarePrefs.stepGoalKey) private var stepGoal = CarePrefs.defaultStepGoal
     @AppStorage(CarePrefs.enabledKey) private var emailsEnabled = true
     @AppStorage(CarePrefs.sendHourKey) private var sendHour = CarePrefs.defaultSendHour
@@ -34,6 +35,15 @@ struct CareSettingsView: View {
         StrandCard(padding: NoopMetrics.cardPadding) {
             VStack(alignment: .leading, spacing: NoopMetrics.cardInnerSpacing) {
                 cardTitle("Home screen", icon: "house.fill")
+                Toggle(isOn: $dashboardHome) {
+                    Text("Dashboard home screen")
+                        .font(StrandFont.subhead)
+                        .foregroundStyle(StrandPalette.textPrimary)
+                }
+                .toggleStyle(.switch)
+                .tint(StrandPalette.accent)
+                .disabled(simpleHome)
+                caption("A day switcher over the sleep, recovery and effort rings, the health and stress monitors, the day's activities and a seven-day chart. Turn off to use the classic Today screen.")
                 Toggle(isOn: $simpleHome) {
                     Text("Simple home screen")
                         .font(StrandFont.subhead)

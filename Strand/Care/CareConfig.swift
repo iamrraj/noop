@@ -40,6 +40,7 @@ enum CarePrefs {
     static let stepGoalKey = "noop.care.stepGoal"
     static let sendHourKey = "noop.care.sendHour"
     static let simpleHomeKey = "noop.care.simpleHome"
+    static let dashboardHomeKey = "noop.care.dashboardHome"
     static let lastSummaryDayKey = "noop.care.lastSummaryDay"
     static let alertLedgerKey = "noop.care.alertLedger"
     static let lastErrorKey = "noop.care.lastError"
