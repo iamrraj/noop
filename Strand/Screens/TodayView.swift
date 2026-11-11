@@ -2607,8 +2607,8 @@ struct TodayView: View {
                     }
                 } else {
                     LazyVGrid(
-                        columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible())],
-                        alignment: .top,
+                        columns: [GridItem(.flexible(), spacing: 8, alignment: .top),
+                                  GridItem(.flexible(), alignment: .top)],
                         spacing: 8
                     ) {
                         ForEach(enabledDashboardCards) { card in
@@ -4407,7 +4407,7 @@ struct TodayView: View {
         // at the source would silently shrink two unrelated numbers on this same screen.
         let recent = Self.recentWorkoutsFeed(workouts, windowDays: workoutsWindowDays)
         // #today-layout: the user-edited feed length (Today Customise), clamped to the prefs range.
-        let feedCount = Self.clampedWorkoutsCount(workoutsCount)
+        let feedCount = TodayLayoutPrefs.clampedWorkoutsCount(workoutsCount)
         if !recent.isEmpty {
             VStack(alignment: .leading, spacing: NoopMetrics.gap) {
                 // Header mirrors the "Your cards" row: the overline + title, the user-edited window

@@ -281,7 +281,9 @@ private struct TodaySectionsCustomizationPage: View {
             configurationLabel: configurationLabel,
             onConfigure: onConfigure,
             onReset: onReset
-        )
+        ) {
+            EmptyView()
+        }
         .navigationTitle("Customize Today")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

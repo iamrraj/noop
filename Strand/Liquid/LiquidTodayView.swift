@@ -393,6 +393,9 @@ struct LiquidTodayView: View {
                         // order they arranged. Empty (renders nothing) until they add one in Customise.
                         // Today-only, matching Android's addedCards section gate + the classic TodayView.
                         case .addedCards: if selectedDayOffset == 0 { hostedCardsSection }
+                        // This screen pins Data Sources below the ordered sections (see the mount
+                        // after this loop), so its slot in the saved order renders nothing here.
+                        case .dataSources: EmptyView()
                         }
                     }
                     // Opt-in "looks like a workout?" suggestion, dropped in the liquid Home rewrite. Its
