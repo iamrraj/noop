@@ -57,8 +57,13 @@ public struct CareDeviceStatus: Equatable, Sendable {
 /// A finished email: what goes on the subject line and in the body.
 public struct CareEmail: Equatable, Sendable {
     public let subject: String
+    /// The plain-text version. Always present: it is what a client shows when it will not render HTML.
     public let body: String
-    public init(subject: String, body: String) { self.subject = subject; self.body = body }
+    /// The designed version of the same content, when there is one.
+    public let html: String?
+    public init(subject: String, body: String, html: String? = nil) {
+        self.subject = subject; self.body = body; self.html = html
+    }
 }
 
 public enum CareReport {
@@ -75,7 +80,7 @@ public enum CareReport {
                                     nowTs: Int, fitnessAge: Double? = nil) -> CareEmail {
         let name = displayName(personName)
         var lines: [String] = []
-        lines.append("Daily summary for \(name) — \(day.day)")
+        lines.append("Daily summary for \(name) — \(longDate(day.day))")
         lines.append("")
 
         if !alerts.isEmpty {
@@ -117,19 +122,23 @@ public enum CareReport {
 
         let flag = alerts.isEmpty ? "" : " — \(alerts.count) alert\(alerts.count == 1 ? "" : "s")"
         return CareEmail(subject: "\(name): daily summary \(day.day)\(flag)",
-                         body: lines.joined(separator: "\n"))
+                         body: lines.joined(separator: "\n"),
+                         html: CareReportHTML.dailySummary(personName: personName, day: day, stepGoal: stepGoal,
+                                                           device: device, alerts: alerts, nowTs: nowTs,
+                                                           fitnessAge: fitnessAge))
     }
 
     /// An out-of-cycle email for alerts that should not wait for the morning.
     public static func urgentAlert(personName: String, alerts: [CareAlert], day: String) -> CareEmail {
         let name = displayName(personName)
-        var lines = ["Alert for \(name) — \(day)", ""]
+        var lines = ["Alert for \(name) — \(longDate(day))", ""]
         for alert in alerts { lines.append("! \(alert.message)") }
         lines.append("")
         lines.append(footer)
         let headline = alerts.first?.title ?? "alert"
         let extra = alerts.count > 1 ? " (+\(alerts.count - 1) more)" : ""
-        return CareEmail(subject: "ALERT \(name): \(headline)\(extra)", body: lines.joined(separator: "\n"))
+        return CareEmail(subject: "ALERT \(name): \(headline)\(extra)", body: lines.joined(separator: "\n"),
+                         html: CareReportHTML.urgentAlert(personName: personName, alerts: alerts, day: day))
     }
 
     static let footer = """
@@ -138,6 +147,21 @@ public enum CareReport {
         """
 
     // MARK: - Formatting
+
+    private static let weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    private static let months = ["January", "February", "March", "April", "May", "June", "July", "August",
+                                 "September", "October", "November", "December"]
+
+    /// "Tuesday 10 November 2026" for a `yyyy-MM-dd` key. The emails are written in English, so the
+    /// names are fixed rather than taken from the phone's language. A key that is not a real day is
+    /// returned unchanged, so a bad value is visible rather than silently replaced.
+    static func longDate(_ key: String) -> String {
+        let parts = key.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3, months.indices.contains(parts[1] - 1),
+              let weekday = DashboardWeek.weekday(key), weekdays.indices.contains(weekday - 1),
+              let day = DashboardWeek.dayOfMonth(key) else { return key }
+        return "\(weekdays[weekday - 1]) \(day) \(months[parts[1] - 1]) \(parts[0])"
+    }
 
     static func displayName(_ raw: String) -> String {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)

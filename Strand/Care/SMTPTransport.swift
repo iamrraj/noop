@@ -18,7 +18,7 @@ enum SMTPTransport {
 
     static func send(config: CareConfig, email: CareEmail, now: Date = Date()) async throws {
         let message = SMTPMessage(from: config.from, to: config.to, subject: email.subject, body: email.body,
-                                  date: now, messageId: "\(UUID().uuidString.lowercased())@noop.local")
+                                  htmlBody: email.html, date: now, messageId: "\(UUID().uuidString.lowercased())@noop.local")
         let session = try SMTPSession(username: config.username, password: config.password, message: message)
         guard let port = NWEndpoint.Port(rawValue: config.port) else {
             throw TransportError.connectionFailed("invalid port")

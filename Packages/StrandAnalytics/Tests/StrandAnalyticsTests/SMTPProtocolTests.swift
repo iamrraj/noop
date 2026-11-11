@@ -39,6 +39,33 @@ final class SMTPProtocolTests: XCTestCase {
         XCTAssertEqual(decoded, body)
     }
 
+    func testHtmlAlternativeIsMultipartWithTextFirst() throws {
+        let message = SMTPMessage(from: "noop@mg.example.com", to: "rahul@example.com", subject: "Hi",
+                                  body: "Plain", htmlBody: "<p>Rich — ünïcode</p>",
+                                  date: Date(timeIntervalSince1970: 1_794_355_200), messageId: "abc-123@noop.local")
+        let text = try message.rendered()
+        let boundary = "=_noop_abc123nooplocal"
+        XCTAssertTrue(text.contains("Content-Type: multipart/alternative; boundary=\"\(boundary)\"\r\n"))
+        let parts = text.components(separatedBy: "--\(boundary)")
+        XCTAssertEqual(parts.count, 4)
+        XCTAssertTrue(parts[1].contains("Content-Type: text/plain; charset=utf-8"))
+        XCTAssertTrue(parts[2].contains("Content-Type: text/html; charset=utf-8"))
+        XCTAssertEqual(parts[3], "--\r\n")
+        func decoded(_ part: String) -> String? {
+            let encoded = part.components(separatedBy: "\r\n\r\n").last?.replacingOccurrences(of: "\r\n", with: "") ?? ""
+            return Data(base64Encoded: encoded).flatMap { String(data: $0, encoding: .utf8) }
+        }
+        XCTAssertEqual(decoded(parts[1]), "Plain")
+        XCTAssertEqual(decoded(parts[2]), "<p>Rich — ünïcode</p>")
+        // No line of the payload may start with a dot, or SMTP would need dot-stuffing.
+        XCTAssertFalse(text.components(separatedBy: "\r\n").contains { $0.hasPrefix(".") })
+        XCTAssertTrue(text.components(separatedBy: "\r\n").allSatisfy { $0.count <= 78 })
+    }
+
+    func testPlainMessageIsNotMultipart() throws {
+        XCTAssertFalse(try message().rendered().contains("multipart"))
+    }
+
     func testEmptyBodyRenders() throws {
         XCTAssertTrue(try message(body: "").rendered().hasSuffix("base64\r\n\r\n"))
     }

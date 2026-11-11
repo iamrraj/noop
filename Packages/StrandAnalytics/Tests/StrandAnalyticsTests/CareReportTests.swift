@@ -86,6 +86,23 @@ final class CareReportTests: XCTestCase {
         XCTAssertEqual(CareReport.stepProgress(steps: 100, goal: 0), 0)
     }
 
+    func testLongDate() {
+        XCTAssertEqual(CareReport.longDate("2026-11-10"), "Tuesday 10 November 2026")
+        XCTAssertEqual(CareReport.longDate("2026-01-01"), "Thursday 1 January 2026")
+        XCTAssertEqual(CareReport.longDate("2028-02-29"), "Tuesday 29 February 2028")
+        // Not a real day: shown as given rather than replaced.
+        XCTAssertEqual(CareReport.longDate("2026-02-30"), "2026-02-30")
+        XCTAssertEqual(CareReport.longDate("yesterday"), "yesterday")
+        XCTAssertEqual(CareReport.longDate(""), "")
+    }
+
+    func testTextBodyLeadsWithTheLongDate() {
+        let email = CareReport.dailySummary(personName: "Mum", day: fullDay, stepGoal: nil,
+                                            device: device, alerts: [], nowTs: 10_000)
+        XCTAssertTrue(email.body.hasPrefix("Daily summary for Mum — Tuesday 10 November 2026"))
+        XCTAssertEqual(email.subject, "Mum: daily summary 2026-11-10")
+    }
+
     func testBlankNameFallsBack() {
         XCTAssertEqual(CareReport.displayName("   "), "NOOP wearer")
         XCTAssertEqual(CareReport.displayName(" Mum "), "Mum")

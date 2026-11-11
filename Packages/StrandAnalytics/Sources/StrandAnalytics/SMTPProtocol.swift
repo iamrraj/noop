@@ -24,12 +24,16 @@ public struct SMTPMessage: Equatable, Sendable {
     public let to: String
     public let subject: String
     public let body: String
+    /// An HTML rendering of `body`. When present the message is sent as `multipart/alternative`,
+    /// plain text first, so a client picks the richest part it can show.
+    public let htmlBody: String?
     public let date: Date
     public let messageId: String
 
-    public init(from: String, to: String, subject: String, body: String, date: Date, messageId: String) {
+    public init(from: String, to: String, subject: String, body: String, htmlBody: String? = nil,
+                date: Date, messageId: String) {
         self.from = from; self.to = to; self.subject = subject; self.body = body
-        self.date = date; self.messageId = messageId
+        self.htmlBody = htmlBody; self.date = date; self.messageId = messageId
     }
 
     /// The bare address inside `Name <addr@host>`, or the string itself when there are no brackets.
@@ -64,18 +68,30 @@ public struct SMTPMessage: Equatable, Sendable {
         try Self.validate(subject, field: "subject", isAddress: false)
         try Self.validate(messageId, field: "messageId", isAddress: false)
 
-        let headers = [
+        let common = [
             "From: \(from)",
             "To: \(to)",
             "Subject: \(Self.encodedHeader(subject))",
             "Date: \(Self.rfc2822(date))",
             "Message-ID: <\(messageId)>",
             "MIME-Version: 1.0",
-            "Content-Type: text/plain; charset=utf-8",
-            "Content-Transfer-Encoding: base64",
         ]
-        let encoded = Data(body.utf8).base64EncodedString()
-        return (headers + [""] + Self.chunk(encoded, every: 76)).joined(separator: "\r\n") + "\r\n"
+        func part(_ type: String, _ text: String) -> [String] {
+            ["Content-Type: \(type); charset=utf-8", "Content-Transfer-Encoding: base64", ""]
+                + Self.chunk(Data(text.utf8).base64EncodedString(), every: 76)
+        }
+        guard let htmlBody else {
+            return (common + part("text/plain", body)).joined(separator: "\r\n") + "\r\n"
+        }
+        // The boundary cannot occur inside a part: both parts are base64, which has no hyphens.
+        let boundary = "=_noop_" + String(messageId.unicodeScalars.filter {
+            CharacterSet.alphanumerics.contains($0) && $0.isASCII
+        }.prefix(32))
+        let lines = common + ["Content-Type: multipart/alternative; boundary=\"\(boundary)\"", ""]
+            + ["--\(boundary)"] + part("text/plain", body)
+            + ["--\(boundary)"] + part("text/html", htmlBody)
+            + ["--\(boundary)--"]
+        return lines.joined(separator: "\r\n") + "\r\n"
     }
 
     /// RFC 2047 encoded-words when the text is not plain ASCII; unchanged otherwise. Split so no

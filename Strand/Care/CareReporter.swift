@@ -76,7 +76,7 @@ enum CareReporter {
         let alerts = CareAlertEngine.deviceAlerts(device: device, nowTs: Int(now.timeIntervalSince1970))
         let email = await summaryEmail(config: config, model: model, now: now, device: device,
                                        deviceAlerts: alerts, defaults: defaults)
-        return await deliver(CareEmail(subject: "[Test] " + email.subject, body: email.body),
+        return await deliver(CareEmail(subject: "[Test] " + email.subject, body: email.body, html: email.html),
                              config: config, now: now, defaults: defaults)
     }
 
